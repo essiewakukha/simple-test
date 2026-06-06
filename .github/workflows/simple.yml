@@ -9,7 +9,7 @@ jobs:
 
   build:
     name: Build and Validate
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64]
     needs: build
     steps:
       - name: Checkout code
@@ -44,7 +44,7 @@ jobs:
 
   deploy:
     name: Deploy to Bank Server
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, Windows, X64]
     needs: [build, test]
     steps:
       - name: Pull latest code
@@ -61,7 +61,7 @@ jobs:
 
   validate:
     name: Post-Deploy Validation
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, Windows, X64]
     needs: deploy
     steps:
       - name: Verify deployment
