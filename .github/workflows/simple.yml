@@ -9,42 +9,40 @@ jobs:
 
   build:
     name: Build and Validate
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Validate HTML file exists
-        shell: powershell
         run: |
-          if (Test-Path index.html) {
-            Write-Host "✓ index.html found"
-          } else {
-            Write-Host "✗ index.html missing"
+          if [ -f index.html ]; then
+            echo "PASS: index.html found"
+          else
+            echo "FAIL: index.html missing"
             exit 1
-          }
+          fi
 
   test:
     name: Test
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Check HTML content
-        shell: powershell
         run: |
-          if (Select-String -Pattern "NCG Africa" -Path index.html) {
-            Write-Host "✓ Content check passed"
-          } else {
-            Write-Host "✗ Content check failed"
+          if grep -q "NCG Africa" index.html; then
+            echo "PASS: Content check passed"
+          else
+            echo "FAIL: Content check failed"
             exit 1
-          }
+          fi
 
   deploy:
     name: Deploy to Bank Server
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted]
     needs: [build, test]
     steps:
       - name: Pull latest code
@@ -61,15 +59,15 @@ jobs:
 
   validate:
     name: Post-Deploy Validation
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted]
     needs: deploy
     steps:
       - name: Verify deployment
         shell: powershell
         run: |
           if (Test-Path C:\simple-app\index.html) {
-            Write-Host "OK: index.html deployed successfully"
+            Write-Host "PASS: index.html deployed successfully"
           } else {
-            Write-Host "FAILED: index.html not found"
+            Write-Host "FAIL: index.html not found"
             exit 1
           }
