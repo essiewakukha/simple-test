@@ -50,6 +50,10 @@ jobs:
             runner: [self-hosted, Linux, server-1]
             app_dir: ~/simple-app
 
+          - server: linux-server-2
+            os: Linux
+            runner: [self-hosted, Linux, server-2]
+            app_dir: ~/simple-app
 
           # ── Windows servers ────────────────────────────
           - server: windows-server-1
@@ -64,6 +68,21 @@ jobs:
 
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Install Git if missing (Windows)
+        if: matrix.os == 'Windows'
+        shell: powershell
+        run: |
+          $gitPath = "C:\Program Files\Git\cmd"
+          if (!(Test-Path "$gitPath\git.exe")) {
+            Write-Host "Installing Git..."
+            Invoke-WebRequest -Uri "https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/Git-2.45.2-64-bit.exe" -OutFile "$env:TEMP\git-installer.exe"
+            Start-Process -FilePath "$env:TEMP\git-installer.exe" -Args "/VERYSILENT /NORESTART /COMPONENTS=cmd" -Wait
+            Write-Host "Git installed."
+          } else {
+            Write-Host "Git already present."
+          }
+          echo "C:\Program Files\Git\cmd" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
       - name: Deploy (Linux)
         if: matrix.os == 'Linux'
         run: |
@@ -76,10 +95,25 @@ jobs:
           fi
           echo "Deployment complete on ${{ matrix.server }}"
 
+      - name: Install Git (Windows)
+        if: matrix.os == 'Windows'
+        shell: powershell
+        run: |
+          if (!(Get-Command git -ErrorAction SilentlyContinue)) {
+            Write-Host "Git not found, installing..."
+            Invoke-WebRequest -Uri "https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/Git-2.45.2-64-bit.exe" -OutFile "$env:TEMP\git-installer.exe"
+            Start-Process -FilePath "$env:TEMP\git-installer.exe" -Args "/VERYSILENT /NORESTART" -Wait
+            $env:PATH += ";C:\Program Files\Git\cmd"
+            Write-Host "Git installed successfully"
+          } else {
+            Write-Host "Git already installed: $(git --version)"
+          }
+
       - name: Deploy (Windows)
         if: matrix.os == 'Windows'
         shell: powershell
         run: |
+          $env:PATH += ";C:\Program Files\Git\cmd"
           $appDir = "${{ matrix.app_dir }}"
           if (!(Test-Path $appDir)) { mkdir $appDir }
           if (!(Test-Path "$appDir\.git")) {
@@ -103,7 +137,10 @@ jobs:
             runner: [self-hosted, Linux, server-1]
             app_dir: ~/simple-app
 
-          
+          - server: linux-server-2
+            os: Linux
+            runner: [self-hosted, Linux, server-2]
+            app_dir: ~/simple-app
 
           # ── Windows servers ────────────────────────────
           - server: windows-server-1
