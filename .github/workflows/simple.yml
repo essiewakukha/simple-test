@@ -47,7 +47,7 @@ jobs:
       - name: Pull latest code (Linux)
         if: runner.os == 'Linux'
         run: |
-          APP_DIR="/opt/simple-app"
+          APP_DIR="$HOME/simple-app"
           if [ ! -d "$APP_DIR" ]; then
             mkdir -p "$APP_DIR"
           fi
@@ -80,7 +80,7 @@ jobs:
       - name: Verify deployment (Linux)
         if: runner.os == 'Linux'
         run: |
-          if [ -f /opt/simple-app/index.html ]; then
+          if [ -f "$HOME/simple-app/index.html" ]; then
             echo "PASS: index.html deployed successfully"
           else
             echo "FAIL: index.html not found"
