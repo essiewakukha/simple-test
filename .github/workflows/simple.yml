@@ -6,7 +6,6 @@ on:
       - 'main'
 
 jobs:
-
   build:
     name: Build and Validate
     runs-on: ubuntu-latest
@@ -45,14 +44,30 @@ jobs:
     runs-on: [self-hosted]
     needs: [build, test]
     steps:
-      - name: Pull latest code
+      - name: Pull latest code (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          APP_DIR="/opt/simple-app"
+          if [ ! -d "$APP_DIR" ]; then
+            mkdir -p "$APP_DIR"
+          fi
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone https://github.com/essiewakukha/simple-test.git "$APP_DIR"
+          else
+            cd "$APP_DIR" && git pull origin main
+          fi
+          echo "Deployment complete"
+
+      - name: Pull latest code (Windows)
+        if: runner.os == 'Windows'
         shell: powershell
         run: |
-          if (!(Test-Path C:\simple-app)) { mkdir C:\simple-app }
-          cd C:\simple-app
-          if (!(Test-Path C:\simple-app\.git)) {
-            git clone https://github.com/essiewakukha/simple-test.git .
+          $appDir = "C:\simple-app"
+          if (!(Test-Path $appDir)) { mkdir $appDir }
+          if (!(Test-Path "$appDir\.git")) {
+            git clone https://github.com/essiewakukha/simple-test.git $appDir
           } else {
+            cd $appDir
             git pull origin main
           }
           Write-Host "Deployment complete"
@@ -62,7 +77,18 @@ jobs:
     runs-on: [self-hosted]
     needs: deploy
     steps:
-      - name: Verify deployment
+      - name: Verify deployment (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ -f /opt/simple-app/index.html ]; then
+            echo "PASS: index.html deployed successfully"
+          else
+            echo "FAIL: index.html not found"
+            exit 1
+          fi
+
+      - name: Verify deployment (Windows)
+        if: runner.os == 'Windows'
         shell: powershell
         run: |
           if (Test-Path C:\simple-app\index.html) {
