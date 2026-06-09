@@ -12,7 +12,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Validate HTML file exists
         run: |
           if [ -f index.html ]; then
@@ -29,7 +28,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Check HTML content
         run: |
           if grep -q "NCG Africa" index.html; then
@@ -40,29 +38,49 @@ jobs:
           fi
 
   deploy:
-    name: Deploy to Bank Server
-    runs-on: [self-hosted]
+    name: Deploy (${{ matrix.server }})
     needs: [build, test]
+    strategy:
+      fail-fast: false        # if one server fails, others keep going
+      matrix:
+        include:
+          # ── Linux servers ──────────────────────────────
+          - server: linux-server-1
+            os: Linux
+            runner: [self-hosted, Linux, server-1]
+            app_dir: ~/simple-app
+
+
+          # ── Windows servers ────────────────────────────
+          - server: windows-server-1
+            os: Windows
+            runner: [self-hosted, Windows, server-1]
+            app_dir: C:\simple-app
+
+          - server: windows-server-2
+            os: Windows
+            runner: [self-hosted, Windows, server-2]
+            app_dir: C:\simple-app
+
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: Pull latest code (Linux)
-        if: runner.os == 'Linux'
+      - name: Deploy (Linux)
+        if: matrix.os == 'Linux'
         run: |
-          APP_DIR="$HOME/simple-app"
-          if [ ! -d "$APP_DIR" ]; then
-            mkdir -p "$APP_DIR"
-          fi
+          APP_DIR="${{ matrix.app_dir }}"
+          if [ ! -d "$APP_DIR" ]; then mkdir -p "$APP_DIR"; fi
           if [ ! -d "$APP_DIR/.git" ]; then
             git clone https://github.com/essiewakukha/simple-test.git "$APP_DIR"
           else
             cd "$APP_DIR" && git pull origin main
           fi
-          echo "Deployment complete"
+          echo "Deployment complete on ${{ matrix.server }}"
 
-      - name: Pull latest code (Windows)
-        if: runner.os == 'Windows'
+      - name: Deploy (Windows)
+        if: matrix.os == 'Windows'
         shell: powershell
         run: |
-          $appDir = "C:\simple-app"
+          $appDir = "${{ matrix.app_dir }}"
           if (!(Test-Path $appDir)) { mkdir $appDir }
           if (!(Test-Path "$appDir\.git")) {
             git clone https://github.com/essiewakukha/simple-test.git $appDir
@@ -70,30 +88,53 @@ jobs:
             cd $appDir
             git pull origin main
           }
-          Write-Host "Deployment complete"
+          Write-Host "Deployment complete on ${{ matrix.server }}"
 
   validate:
-    name: Post-Deploy Validation
-    runs-on: [self-hosted]
+    name: Validate (${{ matrix.server }})
     needs: deploy
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── Linux servers ──────────────────────────────
+          - server: linux-server-1
+            os: Linux
+            runner: [self-hosted, Linux, server-1]
+            app_dir: ~/simple-app
+
+          
+
+          # ── Windows servers ────────────────────────────
+          - server: windows-server-1
+            os: Windows
+            runner: [self-hosted, Windows, server-1]
+            app_dir: C:\simple-app
+
+          - server: windows-server-2
+            os: Windows
+            runner: [self-hosted, Windows, server-2]
+            app_dir: C:\simple-app
+
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: Verify deployment (Linux)
-        if: runner.os == 'Linux'
+      - name: Validate (Linux)
+        if: matrix.os == 'Linux'
         run: |
-          if [ -f "$HOME/simple-app/index.html" ]; then
-            echo "PASS: index.html deployed successfully"
+          if [ -f "${{ matrix.app_dir }}/index.html" ]; then
+            echo "PASS: index.html deployed on ${{ matrix.server }}"
           else
-            echo "FAIL: index.html not found"
+            echo "FAIL: index.html not found on ${{ matrix.server }}"
             exit 1
           fi
 
-      - name: Verify deployment (Windows)
-        if: runner.os == 'Windows'
+      - name: Validate (Windows)
+        if: matrix.os == 'Windows'
         shell: powershell
         run: |
-          if (Test-Path C:\simple-app\index.html) {
-            Write-Host "PASS: index.html deployed successfully"
+          if (Test-Path "${{ matrix.app_dir }}\index.html") {
+            Write-Host "PASS: index.html deployed on ${{ matrix.server }}"
           } else {
-            Write-Host "FAIL: index.html not found"
+            Write-Host "FAIL: index.html not found on ${{ matrix.server }}"
             exit 1
           }
