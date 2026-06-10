@@ -106,10 +106,22 @@ jobs:
         run: |
           $env:PATH += ";C:\Program Files\Git\cmd"
           $appDir = "${{ matrix.app_dir }}"
-          if (!(Test-Path $appDir)) { mkdir $appDir }
-          # Fix dubious ownership error
-          git config --global --add safe.directory $appDir.Replace("\", "/")
-          if (!(Test-Path "$appDir\.git")) {
+
+          # Fix dubious ownership — must run before any git command
+          git config --global --add safe.directory "C:/simple-app"
+          git config --global --add safe.directory "*"
+
+          # If folder was created by a different user, remove and reclone
+          if (Test-Path $appDir) {
+            $acl = (Get-Acl $appDir).Owner
+            $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+            if ($acl -notlike "*$currentUser*") {
+              Write-Host "Ownership mismatch detected, removing and recloning..."
+              Remove-Item -Recurse -Force $appDir
+            }
+          }
+
+          if (!(Test-Path $appDir)) {
             git clone https://github.com/essiewakukha/simple-test.git $appDir
           } else {
             cd $appDir
