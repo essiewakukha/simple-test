@@ -107,6 +107,8 @@ jobs:
           $env:PATH += ";C:\Program Files\Git\cmd"
           $appDir = "${{ matrix.app_dir }}"
           if (!(Test-Path $appDir)) { mkdir $appDir }
+          # Fix dubious ownership error
+          git config --global --add safe.directory $appDir.Replace("\", "/")
           if (!(Test-Path "$appDir\.git")) {
             git clone https://github.com/essiewakukha/simple-test.git $appDir
           } else {
