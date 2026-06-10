@@ -97,12 +97,19 @@ jobs:
           git config --global --add safe.directory "C:/simple-app"
           git config --global --add safe.directory "*"
 
-          # If folder was created by a different user, remove and reclone
+          # Remove and reclone if owned by different user or if index.html not at root
+          $needsReclone = $false
           if (Test-Path $appDir) {
             $acl = (Get-Acl $appDir).Owner
             $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
             if ($acl -notlike "*$currentUser*") {
               Write-Host "Ownership mismatch detected, removing and recloning..."
+              $needsReclone = $true
+            } elseif (!(Test-Path "$appDir\index.html") -and (Test-Path "$appDir\simple-test\index.html")) {
+              Write-Host "Files in subdirectory, fixing structure..."
+              $needsReclone = $true
+            }
+            if ($needsReclone) {
               Remove-Item -Recurse -Force $appDir
             }
           }
@@ -113,7 +120,15 @@ jobs:
             cd $appDir
             git pull origin main
           }
-          Write-Host "Deployment complete on ${{ matrix.server }}"
+
+          # Confirm index.html is at root
+          if (Test-Path "$appDir\index.html") {
+            Write-Host "Deployment complete on ${{ matrix.server }}"
+          } else {
+            Write-Host "ERROR: index.html not at root of $appDir"
+            Get-ChildItem $appDir
+            exit 1
+          }
 
   validate:
     name: Validate (${{ matrix.server }})
