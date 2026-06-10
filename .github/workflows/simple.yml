@@ -45,25 +45,30 @@ jobs:
       matrix:
         include:
           # ── Linux servers ──────────────────────────────
-          - server: linux-server-1
+          - server: esther-HP-EliteBook-830-G5
             os: Linux
-            runner: [self-hosted, Linux, server-1]
+            runner: esther-HP-EliteBook-830-G5
             app_dir: ~/simple-app
 
-          - server: linux-server-2
+          - server: server9
             os: Linux
-            runner: [self-hosted, Linux, server-2]
+            runner: server9
             app_dir: ~/simple-app
 
           # ── Windows servers ────────────────────────────
-          - server: windows-server-1
+          - server: EC2AMAZ-CSKS18C
             os: Windows
-            runner: [self-hosted, Windows, server-1]
+            runner: EC2AMAZ-CSKS18C
             app_dir: C:\simple-app
 
-          - server: windows-server-2
+          - server: EDGE-WIN
             os: Windows
-            runner: [self-hosted, Windows, server-2]
+            runner: EDGE-WIN
+            app_dir: C:\simple-app
+
+          - server: winvwm-oracle
+            os: Windows
+            runner: winvwm-oracle
             app_dir: C:\simple-app
 
     runs-on: ${{ matrix.runner }}
@@ -95,20 +100,6 @@ jobs:
           fi
           echo "Deployment complete on ${{ matrix.server }}"
 
-      - name: Install Git (Windows)
-        if: matrix.os == 'Windows'
-        shell: powershell
-        run: |
-          if (!(Get-Command git -ErrorAction SilentlyContinue)) {
-            Write-Host "Git not found, installing..."
-            Invoke-WebRequest -Uri "https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/Git-2.45.2-64-bit.exe" -OutFile "$env:TEMP\git-installer.exe"
-            Start-Process -FilePath "$env:TEMP\git-installer.exe" -Args "/VERYSILENT /NORESTART" -Wait
-            $env:PATH += ";C:\Program Files\Git\cmd"
-            Write-Host "Git installed successfully"
-          } else {
-            Write-Host "Git already installed: $(git --version)"
-          }
-
       - name: Deploy (Windows)
         if: matrix.os == 'Windows'
         shell: powershell
@@ -132,25 +123,30 @@ jobs:
       matrix:
         include:
           # ── Linux servers ──────────────────────────────
-          - server: linux-server-1
+          - server: esther-HP-EliteBook-830-G5
             os: Linux
-            runner: [self-hosted, Linux, server-1]
+            runner: esther-HP-EliteBook-830-G5
             app_dir: ~/simple-app
 
-          - server: linux-server-2
+          - server: server9
             os: Linux
-            runner: [self-hosted, Linux, server-2]
+            runner: server9
             app_dir: ~/simple-app
 
           # ── Windows servers ────────────────────────────
-          - server: windows-server-1
+          - server: EC2AMAZ-CSKS18C
             os: Windows
-            runner: [self-hosted, Windows, server-1]
+            runner: EC2AMAZ-CSKS18C
             app_dir: C:\simple-app
 
-          - server: windows-server-2
+          - server: EDGE-WIN
             os: Windows
-            runner: [self-hosted, Windows, server-2]
+            runner: EDGE-WIN
+            app_dir: C:\simple-app
+
+          - server: winvwm-oracle
+            os: Windows
+            runner: winvwm-oracle
             app_dir: C:\simple-app
 
     runs-on: ${{ matrix.runner }}
